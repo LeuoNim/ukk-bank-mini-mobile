@@ -345,11 +345,12 @@ class ApiService {
     }
   }
 
-  /// Reset password atau PIN nasabah secara mandiri
+  /// Reset password atau PIN nasabah secara mandiri melalui Verifikasi Silang
   Future<ApiResponse<void>> forgotPassword({
     required String studentId,
     required String accountNumber,
     required String resetType,
+    required String verificationCredential,
     String? newPassword,
     String? newPin,
   }) async {
@@ -361,6 +362,7 @@ class ApiService {
         'student_id': studentId,
         'account_number': accountNumber,
         'reset_type': resetType,
+        'verification_credential': verificationCredential,
         if (newPassword != null) 'new_password': newPassword,
         if (newPassword != null) 'new_password_confirmation': newPassword,
         if (newPin != null) 'new_pin': newPin,

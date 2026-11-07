@@ -420,6 +420,7 @@ class _ForgotPasswordModalState extends State<_ForgotPasswordModal> {
   final _formKey = GlobalKey<FormState>();
   final _studentIdController = TextEditingController();
   final _accountNumberController = TextEditingController();
+  final _verificationController = TextEditingController();
   final _credentialController = TextEditingController();
   final _confirmController = TextEditingController();
 
@@ -431,6 +432,7 @@ class _ForgotPasswordModalState extends State<_ForgotPasswordModal> {
   void dispose() {
     _studentIdController.dispose();
     _accountNumberController.dispose();
+    _verificationController.dispose();
     _credentialController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -447,6 +449,7 @@ class _ForgotPasswordModalState extends State<_ForgotPasswordModal> {
       studentId: _studentIdController.text.trim(),
       accountNumber: _accountNumberController.text.trim().toUpperCase(),
       resetType: _resetType,
+      verificationCredential: _verificationController.text.trim(),
       newPassword: _resetType == 'password' ? _credentialController.text : null,
       newPin: _resetType == 'pin' ? _credentialController.text : null,
     );
@@ -643,7 +646,7 @@ class _ForgotPasswordModalState extends State<_ForgotPasswordModal> {
                 controller: _accountNumberController,
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  hintText: 'Contoh: AK-0001 atau RPL-0001',
+                  hintText: 'Contoh: AKL-0001 atau RPL-0001',
                   hintStyle: GoogleFonts.inter(fontSize: 12),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -656,6 +659,78 @@ class _ForgotPasswordModalState extends State<_ForgotPasswordModal> {
                 validator: (v) => v == null || v.trim().isEmpty
                     ? 'Nomor rekening wajib diisi'
                     : null,
+              ),
+              const SizedBox(height: 12),
+
+              // Verifikasi Identitas Sah (Cross-Credential)
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _resetType == 'password'
+                          ? 'Verifikasi: PIN Transaksi (6 Digit)'
+                          : 'Verifikasi: Password Akun Saat Ini',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue.shade900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _resetType == 'password'
+                          ? 'Masukkan PIN transaksi Anda untuk memvalidasi bahwa Anda adalah pemilik sah rekening.'
+                          : 'Masukkan password akun login Anda untuk memvalidasi bahwa Anda adalah pemilik sah rekening.',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: Colors.blue.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _verificationController,
+                      obscureText: true,
+                      keyboardType: _resetType == 'password'
+                          ? TextInputType.number
+                          : TextInputType.text,
+                      maxLength: _resetType == 'password' ? 6 : null,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        counterText: '',
+                        hintText: _resetType == 'password'
+                            ? '6 digit PIN transaksi'
+                            : 'Password login saat ini',
+                        hintStyle: GoogleFonts.inter(fontSize: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return _resetType == 'password'
+                              ? 'PIN verifikasi wajib diisi'
+                              : 'Password verifikasi wajib diisi';
+                        }
+                        if (_resetType == 'password' && v.trim().length != 6) {
+                          return 'PIN verifikasi harus 6 digit angka';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
 
@@ -779,6 +854,34 @@ class _ForgotPasswordModalState extends State<_ForgotPasswordModal> {
                             fontSize: 13,
                           ),
                         ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Bantuan jika lupa keduanya
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.amber.shade200),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.help_outline, size: 16, color: Colors.amber.shade800),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Lupa Password DAN PIN sekaligus? Kunjungi loket Teller Bank Mini sekolah untuk cetak kredensial baru dengan membawa identitas siswa.',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: Colors.amber.shade900,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

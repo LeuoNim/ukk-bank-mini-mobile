@@ -283,15 +283,18 @@ class _DashboardTabState extends State<DashboardTab> {
                           pinController.clear();
 
                           if (failedAttempts >= 3) {
-                            // Salah PIN 3x: Otomatis Logout Demi Keamanan
+                            // Salah PIN 3x: Otomatis Batalkan Transaksi di Server & Logout Demi Keamanan
                             _isPinDialogOpen = false;
                             navigator.pop();
+                            try {
+                              await ApiService().rejectWithdrawal(trx['id']);
+                            } catch (_) {}
                             await ApiService().logout();
 
                             rootNav.pushAndRemoveUntil(
                               MaterialPageRoute(
                                 builder: (context) => const LoginScreen(
-                                  securityAlertMessage: 'Sesi akun Anda telah dikeluarkan otomatis demi keamanan karena salah memasukkan PIN transaksi sebanyak 3 kali berturut-turut. Silakan login kembali, atau jika lupa PIN maka buatlah pin baru dengan cara klik lupa password/pin atau kunjungi langsung bank mini di sekolah.',
+                                  securityAlertMessage: 'Sesi akun Anda telah dikeluarkan otomatis demi keamanan karena salah memasukkan PIN transaksi sebanyak 3 kali berturut-turut. Silakan login kembali, atau jika lupa PIN maka buatlah pin baru dengan cara klik lupa password/pin.',
                                 ),
                               ),
                               (route) => false,
