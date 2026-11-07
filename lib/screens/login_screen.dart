@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../core/constants/api_constants.dart';
 import '../core/constants/app_colors.dart';
 import '../services/api_service.dart';
 import 'main_navigation_screen.dart';
@@ -85,89 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _showServerConfigDialog() async {
-    final currentUrl = await ApiConstants.getBaseUrl();
-    final urlController = TextEditingController(text: currentUrl);
-
-    if (!mounted) return;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            const Icon(Icons.dns, color: Color(0xFFD97706)),
-            const SizedBox(width: 8),
-            Text(
-              'Pengaturan Server API',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 17),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Sesuaikan alamat API jika HP dihubungkan via Wi-Fi atau setelah website dideploy online.',
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: urlController,
-              decoration: const InputDecoration(
-                labelText: 'Alamat Server API',
-                hintText: 'http://192.168.1.x:8000/api atau https://domain.com/api',
-                border: OutlineInputBorder(),
-              ),
-              style: GoogleFonts.inter(fontSize: 13),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Petunjuk:\n• USB (adb reverse): http://127.0.0.1:8000/api\n• Wi-Fi Sekolah: http://[IP_LAPTOP]:8000/api\n• Deploy Hosting: https://[DOMAIN_WEBSITE]/api',
-              style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              await ApiConstants.resetBaseUrl();
-              Navigator.pop(ctx);
-              messenger.showSnackBar(
-                const SnackBar(content: Text('Server direset ke default USB (127.0.0.1)')),
-              );
-            },
-            child: const Text('Reset Default'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              final newUrl = urlController.text.trim();
-              if (newUrl.isNotEmpty) {
-                final messenger = ScaffoldMessenger.of(context);
-                await ApiConstants.setBaseUrl(newUrl);
-                Navigator.pop(ctx);
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text('Alamat server disimpan: $newUrl'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
-              }
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _loginIdController.dispose();
@@ -182,13 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_ethernet, color: AppColors.textSecondary, size: 22),
-            tooltip: 'Pengaturan Server API',
-            onPressed: _showServerConfigDialog,
-          ),
-        ],
       ),
       body: SafeArea(
         child: Center(
