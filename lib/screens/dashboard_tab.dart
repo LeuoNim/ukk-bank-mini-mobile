@@ -291,7 +291,7 @@ class _DashboardTabState extends State<DashboardTab> {
                             rootNav.pushAndRemoveUntil(
                               MaterialPageRoute(
                                 builder: (context) => const LoginScreen(
-                                  securityAlertMessage: 'Sesi akun Anda telah dikeluarkan otomatis demi keamanan karena salah memasukkan PIN transaksi sebanyak 3 kali berturut-turut. Silakan login kembali, atau jika lupa PIN segera kunjungi loket Teller sekolah untuk verifikasi.',
+                                  securityAlertMessage: 'Sesi akun Anda telah dikeluarkan otomatis demi keamanan karena salah memasukkan PIN transaksi sebanyak 3 kali berturut-turut. Silakan login kembali, atau jika lupa PIN maka buatlah pin baru dengan cara klik lupa password/pin atau kunjungi langsung bank mini di sekolah.',
                                 ),
                               ),
                               (route) => false,
