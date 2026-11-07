@@ -26,13 +26,15 @@ class _DashboardTabState extends State<DashboardTab> {
   bool _isLoading = true;
   bool _hideBalance = false;
   Timer? _pollTimer;
+  bool _isPinDialogOpen = false;
+  int? _lastPromptedTrxId;
 
   @override
   void initState() {
     super.initState();
     _loadData();
-    // Polling setiap 4 detik untuk mendeteksi permintaan penarikan dari loket teller secara realtime
-    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    // Polling setiap 3 detik untuk mendeteksi permintaan penarikan dari loket teller secara realtime
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       _checkPendingWithdrawal();
     });
   }
@@ -50,6 +52,23 @@ class _DashboardTabState extends State<DashboardTab> {
         setState(() {
           _pendingWithdrawal = res.data;
         });
+      }
+
+      // Jika ada permintaan penarikan baru dan dialog belum terbuka, otomatis munculkan Pop-up PIN
+      if (res.data != null && !_isPinDialogOpen) {
+        final trxId = res.data!['id'];
+        if (_lastPromptedTrxId != trxId) {
+          _lastPromptedTrxId = trxId;
+          _isPinDialogOpen = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _isPinDialogOpen) {
+              _showPinDialog(res.data!);
+            }
+          });
+        }
+      } else if (res.data == null) {
+        // Transaksi pending sudah selesai atau dibatalkan teller
+        _lastPromptedTrxId = null;
       }
     }
   }
@@ -192,7 +211,8 @@ class _DashboardTabState extends State<DashboardTab> {
                 onPressed: isSubmitting
                     ? null
                     : () {
-                        Navigator.pop(ctx);
+                        _isPinDialogOpen = false;
+                        Navigator.of(ctx).pop();
                         _handleReject(trx['id']);
                       },
                 child: Text('Tolak', style: GoogleFonts.inter(color: Colors.red)),
@@ -219,9 +239,11 @@ class _DashboardTabState extends State<DashboardTab> {
 
                         setDialogState(() => isSubmitting = true);
                         final messenger = ScaffoldMessenger.of(context);
+                        final navigator = Navigator.of(ctx);
                         final res = await ApiService().confirmWithdrawal(trx['id'], pin);
 
-                        Navigator.pop(ctx);
+                        _isPinDialogOpen = false;
+                        navigator.pop();
                         if (!mounted) return;
 
                         if (res.success) {
@@ -233,17 +255,11 @@ class _DashboardTabState extends State<DashboardTab> {
                           );
                           _loadData();
                         } else {
-                          showDialog(
-                            context: ctx,
-                            builder: (c) => AlertDialog(
-                              title: const Text('Otorisasi Gagal'),
+                          messenger.showSnackBar(
+                            SnackBar(
                               content: Text(res.message),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(c),
-                                  child: const Text('OK'),
-                                ),
-                              ],
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 4),
                             ),
                           );
                         }
@@ -441,7 +457,10 @@ class _DashboardTabState extends State<DashboardTab> {
                                   ),
                                   padding: const EdgeInsets.symmetric(vertical: 8),
                                 ),
-                                onPressed: () => _showPinDialog(_pendingWithdrawal!),
+                                onPressed: () {
+                                  _isPinDialogOpen = true;
+                                  _showPinDialog(_pendingWithdrawal!);
+                                },
                                 icon: const Icon(Icons.key, size: 16),
                                 label: Text(
                                   'Input PIN Otorisasi',
