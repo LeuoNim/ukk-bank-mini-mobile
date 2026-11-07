@@ -5,7 +5,8 @@ import '../services/api_service.dart';
 import 'main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String? securityAlertMessage;
+  const LoginScreen({super.key, this.securityAlertMessage});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -18,6 +19,48 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePin = true;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.securityAlertMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.shield_outlined, color: Colors.red, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  'Keamanan Akun',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            content: Text(
+              widget.securityAlertMessage!,
+              style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary, height: 1.4),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Saya Mengerti'),
+              ),
+            ],
+          ),
+        );
+      });
+    }
+  }
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;

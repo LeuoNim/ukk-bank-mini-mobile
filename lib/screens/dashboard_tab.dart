@@ -6,6 +6,7 @@ import '../core/utils/currency_formatter.dart';
 import '../models/customer_model.dart';
 import '../models/transaction_model.dart';
 import '../services/api_service.dart';
+import 'login_screen.dart';
 
 class DashboardTab extends StatefulWidget {
   final Function(int) onTabChange;
@@ -111,6 +112,8 @@ class _DashboardTabState extends State<DashboardTab> {
   void _showPinDialog(Map<String, dynamic> trx) {
     final pinController = TextEditingController();
     bool isSubmitting = false;
+    int failedAttempts = 0;
+    String? inlineError;
 
     showDialog(
       context: context,
@@ -203,6 +206,26 @@ class _DashboardTabState extends State<DashboardTab> {
                       ),
                     ),
                   ),
+                  if (inlineError != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEE2E2),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFFCA5A5)),
+                      ),
+                      child: Text(
+                        inlineError!,
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: const Color(0xFF991B1B),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -228,25 +251,26 @@ class _DashboardTabState extends State<DashboardTab> {
                     : () async {
                         final pin = pinController.text.trim();
                         if (pin.length != 6) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('PIN harus terdiri dari 6 digit angka.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                          setDialogState(() {
+                            inlineError = 'PIN harus terdiri dari 6 digit angka.';
+                          });
                           return;
                         }
 
-                        setDialogState(() => isSubmitting = true);
+                        setDialogState(() {
+                          isSubmitting = true;
+                          inlineError = null;
+                        });
+
                         final messenger = ScaffoldMessenger.of(context);
                         final navigator = Navigator.of(ctx);
+                        final rootNav = Navigator.of(context);
                         final res = await ApiService().confirmWithdrawal(trx['id'], pin);
 
-                        _isPinDialogOpen = false;
-                        navigator.pop();
-                        if (!mounted) return;
-
                         if (res.success) {
+                          _isPinDialogOpen = false;
+                          navigator.pop();
+                          if (!mounted) return;
                           messenger.showSnackBar(
                             SnackBar(
                               content: Text(res.message),
@@ -255,13 +279,30 @@ class _DashboardTabState extends State<DashboardTab> {
                           );
                           _loadData();
                         } else {
-                          messenger.showSnackBar(
-                            SnackBar(
-                              content: Text(res.message),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 4),
-                            ),
-                          );
+                          failedAttempts++;
+                          pinController.clear();
+
+                          if (failedAttempts >= 3) {
+                            // Salah PIN 3x: Otomatis Logout Demi Keamanan
+                            _isPinDialogOpen = false;
+                            navigator.pop();
+                            await ApiService().logout();
+
+                            rootNav.pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (context) => const LoginScreen(
+                                  securityAlertMessage: 'Sesi akun Anda telah dikeluarkan otomatis demi keamanan karena salah memasukkan PIN transaksi sebanyak 3 kali berturut-turut. Silakan login kembali, atau jika lupa PIN segera kunjungi loket Teller sekolah untuk verifikasi.',
+                                ),
+                              ),
+                              (route) => false,
+                            );
+                          } else {
+                            // Berikan kesempatan percobaan berikutnya
+                            setDialogState(() {
+                              isSubmitting = false;
+                              inlineError = '${res.message}\n(Percobaan salah $failedAttempts dari 3)';
+                            });
+                          }
                         }
                       },
                 child: isSubmitting
